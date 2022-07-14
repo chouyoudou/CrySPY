@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source ~/anaconda3/etc/profile.d/conda.sh
+conda activate ~/anaconda3/envs/deepmd
+python opt.py > ase.log
+
+sed -i -e '3 s/^.*$/done/' stat_job
+

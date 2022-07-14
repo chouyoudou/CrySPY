@@ -21,9 +21,9 @@ def readin():
     global nstage, njob, jobcmd, jobfile
     # ------ read intput variables
     calc_code = config.get('basic', 'calc_code')
-    if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS', 'OMX']:
+    if calc_code not in ['VASP', 'QE', 'soiap', 'LAMMPS', 'OMX', 'ASE']:
         raise NotImplementedError(
-            'calc_code must be VASP, QE, OMX, soiap, or LAMMPS')
+            'calc_code must be VASP, QE, OMX, soiap, ASE or LAMMPS')
     algo = config.get('basic', 'algo')
     if algo not in ['RS', 'BO', 'LAQA', 'EA']:
         raise NotImplementedError('algo must be RS, BO, LAQA, or EA')
@@ -52,13 +52,13 @@ def readin():
     global vol_factor, vol_mu, vol_sigma, mindist
     global maxcnt, symprec, spgnum, use_find_wy
     global minlen, maxlen, dangle
-
+    global buffer, vacuum, thickness, up_atype, up_nat ,pre_relax
     # ------ read intput variables
     try:
         struc_mode = config.get('structure', 'struc_mode')
     except (configparser.NoOptionError, configparser.NoSectionError):
         struc_mode = 'crystal'
-    if struc_mode not in ['crystal', 'mol', 'mol_bs', 'host']:
+    if struc_mode not in ['crystal', 'mol', 'mol_bs', 'host', 'interface']:
         raise ValueError('struc_mode is wrong')
     natot = config.getint('structure', 'natot')
     if natot <= 0:
@@ -109,6 +109,19 @@ def readin():
         timeout_mol = 120.0
         rot_mol = None
         nrot = None
+    # -- interface
+    if struc_mode in ['interface']:
+        buffer = config.getfloat('structure', 'buffer')
+        vacuum = config.getfloat('structure', 'vacuum')
+        thickness = config.getfloat('structure', 'thickness')
+        up_atype = config.get('structure', 'up_atype')
+        up_atype = [a for a in up_atype.split()]
+        up_nat = config.get('structure', 'up_nat')
+        up_nat = [int(x) for x in up_nat.split()] 
+        try:
+            pre_relax = config.getboolean('option', 'pre_relax')
+        except (configparser.NoOptionError, configparser.NoSectionError):
+            pre_relax = False
     # -- volume
     try:
         vol_mu = config.getfloat('structure', 'vol_mu')
@@ -597,8 +610,23 @@ def readin():
         lammps_data = config.get('LAMMPS', 'lammps_data')
         kpt_flag = False
         force_gamma = False
+
+    # ---------- ASE
+    elif calc_code == 'ASE':
+        # ------ global declaration
+        global ase_infile, ase_outfile, ase_potential
+        # ------ read intput variables
+        ase_infile = config.get('ASE', 'ase_infile')
+        ase_outfile = config.get('ASE', 'ase_outfile')
+        try:
+            ase_potential = config.get('ASE', 'ase_potential')
+            ase_potential = ase_potential.split()
+        except configparser.NoOptionError:
+            ase_potential = None
+        kpt_flag = False
+
     else:
-        raise NotImplementedError('calc_code must be VASP, QE, soiap,'
+        raise NotImplementedError('calc_code must be VASP, QE, soiap, ASE'
                                   ' or LAMMPS')
 
 
@@ -677,6 +705,12 @@ def writeout():
         fout.write('minlen = {}\n'.format(minlen))
         fout.write('maxlen = {}\n'.format(maxlen))
         fout.write('dangle = {}\n'.format(dangle))
+        if struc_mode in ['interface']:
+            fout.write('buffer = {}\n'.format(buffer))
+            fout.write('vacuum = {}\n'.format(vacuum))
+            fout.write('thickness = {}\n'.format(thickness))
+            fout.write('up_atype = {}\n'.format(up_atype))
+            fout.write('pre_relax = {}\n'.format(pre_relax))
 
         # ------ BO
         if algo == 'BO':

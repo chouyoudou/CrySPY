@@ -68,6 +68,15 @@ def initialize():
                                              nrot=rin.nrot,
                                              id_offset=0,
                                              init_pos_path='./data/init_POSCARS')
+            # ------ interface
+            elif rin.struc_mode == 'interface':
+                rsgx.gen_interface(nstruc=rin.tot_struc,buffer=rin.buffer,
+                                   vacuum=rin.vacuum,thickness=rin.thickness, 
+                                   up_atype=rin.up_atype, up_nat=rin.up_nat,
+                                   id_offset=0, pre_relax=rin.pre_relax,
+                                   init_pos_path='./data/init_POSCARS',
+                                   )
+                
             # ------ init_struc_data
             init_struc_data = rsgx.init_struc_data
         # ------ Rnd_struc_gen

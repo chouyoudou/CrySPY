@@ -1,0 +1,20 @@
+[basic]
+algo = RS
+calc_code = ASE
+tot_struc = 200
+nstage = 1
+njob = 6
+jobcmd = bash
+jobfile = job_cryspy
+
+[structure]
+natot = 40
+atype = Hf O
+nat = 16 24
+
+[ASE]
+ase_infile = opt.py
+ase_outfile = ase.log
+ase_potential = frozen_model.pb
+
+[option]

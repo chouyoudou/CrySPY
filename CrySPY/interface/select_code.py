@@ -12,7 +12,7 @@ from .QE import calc_files_qe, ctrl_job_qe, collect_qe
 from .soiap import calc_files_soiap, ctrl_job_soiap, collect_soiap
 from .LAMMPS import calc_files_lammps, ctrl_job_lammps, collect_lammps
 from .OMX import calc_files_OMX, ctrl_job_OMX, collect_OMX
-
+from .ASE import calc_files_ase, ctrl_job_ase, collect_ase
 from ..IO import read_input as rin
 
 
@@ -27,8 +27,10 @@ def check_calc_files():
         calc_files_soiap.check_input_soiap()
     elif rin.calc_code == 'LAMMPS':
         calc_files_lammps.check_input_lammps()
+    elif rin.calc_code == 'ASE':
+        calc_files_ase.check_input_ase()
     else:
-        raise NotImplementedError('now only VASP, QE, OMX, soiap, or LAMMPS')
+        raise NotImplementedError('now only VASP, QE, OMX, soiap, ASE, or LAMMPS')
 
 
 def next_stage(stage, work_path, *args):
@@ -52,8 +54,11 @@ def next_stage(stage, work_path, *args):
     elif rin.calc_code == 'LAMMPS':
         skip_flag = ctrl_job_lammps.next_stage_lammps(stage, work_path)
         return skip_flag
+    elif rin.calc_code == 'ASE':
+        skip_flag = ctrl_job_ase.next_stage_ase(stage, work_path)
+        return skip_flag
     else:
-        raise NotImplementedError('now only VASP, QE, OMX, soiap, or LAMMPS')
+        raise NotImplementedError('now only VASP, QE, OMX, soiap, ASE or LAMMPS')
 
 
 def collect(current_id, work_path):
@@ -72,6 +77,9 @@ def collect(current_id, work_path):
     elif rin.calc_code == 'LAMMPS':
         opt_struc, energy, magmom, check_opt = \
             collect_lammps.collect_lammps(current_id, work_path)
+    elif rin.calc_code == 'ASE':
+        opt_struc, energy, magmom, check_opt = \
+            collect_ase.collect_ase(current_id, work_path)
     else:
         raise NotImplementedError('only VASP, QE, OMX, soiap, LAMMPS for now')
 
@@ -97,6 +105,8 @@ def next_struc(structure, current_id, work_path, *args):
         ctrl_job_soiap.next_struc_soiap(structure, current_id, work_path)
     elif rin.calc_code == 'LAMMPS':
         ctrl_job_lammps.next_struc_lammps(structure, current_id, work_path)
+    elif rin.calc_code == 'ASE':
+        ctrl_job_ase.next_struc_ase(structure, current_id, work_path)
     else:
         raise NotImplementedError('only VASP, QE, OMX, soiap, LAMMPS for now')
 

@@ -18,8 +18,10 @@ from ..struc_util import sort_by_atype
 from ..struc_util import out_poscar
 from ..struc_util import scale_cell_mol
 from ..struc_util import rot_mat
-
-
+from .gen_interface import match_cell
+from ase.io import read
+from pyxtal.lattice import Lattice
+from pymatgen.io.ase import AseAtomsAdaptor
 class Rnd_struc_gen_pyxtal:
     '''
     Random structure generation using pyxtal
@@ -573,6 +575,135 @@ class Rnd_struc_gen_pyxtal:
                 # -- save init_POSCARS
                 if init_pos_path is not None:
                     out_poscar(tmp_struc, cid, init_pos_path)
+            else:
+                self.spg_error.append(spg)
+
+    def gen_interface(self, nstruc, buffer, vacuum, thickness, up_atype, up_nat, id_offset=0, init_pos_path=None, pre_relax = False):
+        '''
+        Generate random structures for given space groups
+
+        # ---------- args
+        nstruc (int): number of generated structures
+
+        id_offset (int): default: 0
+                         structure ID starts from id_offset
+                         e.g. nstruc = 3, id_offset = 10
+                              you obtain ID 10, ID 11, ID 12
+
+        init_pos_path (str): default: None
+                             specify a path of file
+                             if you write POSCAR data of init_struc_data
+                             ATTENSION: data are appended to the specified file
+
+        buffer (float) : unit: A
+                         thickness of the buffer region, which is the region between
+                         substrate and upper region. 
+        
+        vacuum (float) : unit : A
+                        thickness of the vacuum region, which is the region to avoid 
+                        the effects of periodic boundary
+                        
+        thickness (float) : unit A
+                            thickness of the upper region, the atoms can 
+                            only be generated in here
+                            
+        up_atype (list) : a list contain the elements of the upper region
+        
+        up_nat (list) : a list contain the number of atoms of the upper region
+                             
+        # ---------- comment
+        generated structure data are saved in self.init_struc_data
+        '''
+        
+        # ---------- check args
+        if not (type(nstruc) is int and nstruc > 0):
+            raise ValueError('nstruc must be positive int')
+        if type(id_offset) is not int:
+            raise TypeError('id_offset must be int')
+        if init_pos_path is None or type(init_pos_path) is str:
+            pass
+        else:
+            raise ValueError('init_pos_path is wrong.'
+                             ' init_pos_path = {}'.format(init_pos_path))
+        # ---------- initialize
+        self.init_struc_data = {}
+        sub_struc = read('./SUB_POSCAR',format="vasp") 
+        sub_cell_par = sub_struc.cell.cellpar()
+        # ---------- loop for interface generattion
+        while len(self.init_struc_data) < nstruc:
+            # ------ spgnum --> spg
+            if self.spgnum == 'all':
+                spg = random.randint(1, 230)
+            else:
+                spg = random.choice(self.spgnum)
+            if spg in self.spg_error:
+                continue
+
+            # ------ generate UP structure (fix lattice) ###
+            tmp_crystal = pyxtal()
+            up_lattice = Lattice.from_para(sub_cell_par[0], sub_cell_par[1], thickness,
+                                           sub_cell_par[3], sub_cell_par[4], sub_cell_par[5])
+            try:
+                tmp_crystal.from_random(dim=3, group=spg, species=up_atype,
+                                        numIons=up_nat, lattice=up_lattice)
+            except Exception as e:
+                print(e, ':spg = {} retry.'.format(spg), file=sys.stderr)
+                self.spg_error.append(spg)
+                continue
+            # -- check if the atoms in cell
+            up_ase_crystal = tmp_crystal.to_ase()
+            up_cell_par = up_ase_crystal.cell.cellpar()
+            if (True not in (up_ase_crystal.positions[:,2] < 0) and  
+                True not in (up_ase_crystal.positions[:,2] > up_cell_par[2]) ): 
+                pass
+            else:
+                print('Some atoms are not in the cell, retry')
+                continue
+            # -- generate the interface
+            interface = match_cell(up_ase_crystal, sub_struc, buffer, vacuum)
+
+            if tmp_crystal.valid:
+                interface = AseAtomsAdaptor.get_structure(interface)    # pymatgen Structure format
+                '''
+                # -- check the number of atoms
+                if not self._check_nat(tmp_struc):
+                    # (pyxtal 0.1.4) cryspy adopts "conventional=False",
+                    #     which is better for DFT calculation
+                    # pyxtal returns conventional cell, that is, too many atoms
+                    tmp_struc = tmp_struc.get_primitive_structure()
+                    # recheck nat
+                    if not self._check_nat(tmp_struc):    # failure
+                        continue
+                '''
+                # -- sort
+                interface = sort_by_atype(interface, self.atype)
+                # -- check minimum distance
+                if self.mindist is not None:
+                    success, mindist_ij, dist = check_distance(interface,
+                                                               self.atype,
+                                                               self.mindist)
+                    if not success:
+                        print('mindist in gen_struc: {} - {}, {}. retry.'.format(
+                            self.atype[mindist_ij[0]],
+                            self.atype[mindist_ij[1]],
+                            dist), file=sys.stderr)
+                        continue    # failure
+                # -- check actual space group
+                try:
+                    spg_sym, spg_num = interface.get_space_group_info(
+                        symprec=self.symprec)
+                except TypeError:
+                    spg_num = 0
+                    spg_sym = None
+                # -- register the structure in pymatgen format
+                cid = len(self.init_struc_data) + id_offset
+                self.init_struc_data[cid] = interface
+                print('Structure ID {0:>6} was generated.'
+                      ' Space group: {1:>3} --> {2:>3} {3}'.format(
+                       cid, spg, spg_num, spg_sym))
+                # -- save init_POSCARS
+                if init_pos_path is not None:
+                    out_poscar(interface, cid, init_pos_path)
             else:
                 self.spg_error.append(spg)
 
