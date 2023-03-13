@@ -19,8 +19,7 @@ Document site is moved to https://tomoki-yamashita.github.io/CrySPY_doc/
 | up_nat | int     |         | Number of atoms in upper structure. |
 | struc_mode | interface, crystal, mol, mol_bs     |         | Structure generation mode. |
 <img width="252" alt="截屏2023-03-13 16 12 22" src="https://user-images.githubusercontent.com/60209970/224632007-b6480cd6-b27b-452c-bb5d-b94968e6a871.png">
-![opt](https://user-images.githubusercontent.com/60209970/224637518-83ba63b6-2af4-454a-af23-55dd6a3fd901.gif)
-
+![opt](example/ASE_interface_Au_Ag/opt.gif)
 
 ## License
 CrySPY is distributed under the MIT License.  
