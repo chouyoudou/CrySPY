@@ -13,9 +13,11 @@ Document site is moved to https://tomoki-yamashita.github.io/CrySPY_doc/
 | Name      | Value     | Default | Description                                                                                               |
 | --------- | --------- | ------- | --------------------------------------------------------------------------------------------------------- |
 | buffer    | Float     | 0       | Distance between substrate and upper layer, set to prevent overlap of the upper atoms and substrate atoms of the initial structure. |
-| Vacuum    | Float     | 0       | The vacuum layer above the upper atoms, set to avoid the effects caused by periodic conditions.           |
+| vacuum    | Float     | 0       | The vacuum layer above the upper atoms, set to avoid the effects caused by periodic conditions.           |
 | thickness | Float     |         | The thickness of the upper structure, which is the thickness of the structure you want to predict by CrySPY. |
-
+| up_atype | Str     |         | Atomic element of the upper structure. e.g. up_atype = Al O |
+| up_nat | int     |         | Number of atoms in upper structure. |
+| struc_mode | interface, crystal, mol, mol_bs     |         | Structure generation mode. |
 
 ## License
 CrySPY is distributed under the MIT License.  
