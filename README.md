@@ -4,10 +4,10 @@
 CrySPY is a crystal structure prediction tool written in Python.  
 Document site is moved to https://tomoki-yamashita.github.io/CrySPY_doc/
 
-## Latest version
-version 0.10.3 (2022 May 17)
-
 ## Important changes
+- Now CrySPY can be used for interface structure prediction.
+- New interface for Atomic Simulation Environment (ASE).
+
 * version 0.10.3 (2022 May 17)
     - Bug fixed for LAMMPS IO
 * version 0.10.2 (2022 January 24)
