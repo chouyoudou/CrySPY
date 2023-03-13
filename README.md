@@ -10,11 +10,12 @@ Document site is moved to https://tomoki-yamashita.github.io/CrySPY_doc/
 
 
 ## Parameters of interface structure prediction
-|Name     | Value.                  | Default      | Description    
-|-------- | ----------------------  | ------------ | -------------------- | -----------------------  | -----------
-|buffer   | Float       | 0     | Distance between substrate and upper layer, set to prevent overlap of the upper atoms and substrate atoms of the initial structure.
-|Vacuum | Float         | 0 | The vacuum layer above the upper atoms , set to avoid the effects caused by periodic conditions.
-|thickness    | Float     |          | The thickness of the  upper structure, which is the thickness of the structure you want to predict by CrySPY.
+| Name      | Value     | Default | Description                                                                                               |
+| --------- | --------- | ------- | --------------------------------------------------------------------------------------------------------- |
+| buffer    | Float     | 0       | Distance between substrate and upper layer, set to prevent overlap of the upper atoms and substrate atoms of the initial structure. |
+| Vacuum    | Float     | 0       | The vacuum layer above the upper atoms, set to avoid the effects caused by periodic conditions.           |
+| thickness | Float     |         | The thickness of the upper structure, which is the thickness of the structure you want to predict by CrySPY. |
+
 
 ## License
 CrySPY is distributed under the MIT License.  
