@@ -652,13 +652,7 @@ class Rnd_struc_gen_pyxtal:
                 continue
             # -- check if the atoms in cell
             up_ase_crystal = tmp_crystal.to_ase()
-            up_cell_par = up_ase_crystal.cell.cellpar()
-            if (True not in (up_ase_crystal.positions[:,2] < 0) and  
-                True not in (up_ase_crystal.positions[:,2] > up_cell_par[2]) ): 
-                pass
-            else:
-                print('Some atoms are not in the cell, retry')
-                continue
+            up_ase_crystal.wrap()
             # -- generate the interface
             interface = match_cell(up_ase_crystal, sub_struc, buffer, vacuum)
 
