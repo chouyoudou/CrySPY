@@ -6,9 +6,9 @@ import os
 from ase.constraints import FixAtoms
 from pyxtal import pyxtal
 from random import randint 
-from ase.calculators.lj import LennardJones
-
-
+from ase.neighborlist import NeighborList
+from ase.calculators.calculator import Calculator, all_changes
+from ase.optimize import BFGS
 
 def update_pos(up_struc, sub_struc, buffer):
     '''Automatically match substrate and superstructure'''
@@ -103,6 +103,91 @@ def generate_interface(sub_struc_path, spice, spice_num, up_thickness, buffer=0,
     up_struc = generate_up_structure(spice, spice_num, cell_par, up_thickness)
     inter = match_cell(up_struc, sub_struc, buffer, vacum)
     return inter
+
+
+
+class LinearInverseForce(Calculator):
+
+    implemented_properties = ['energy', 'energies', 'forces', 'free_energy']
+    implemented_properties += ['stress', 'stresses']  # bulk properties
+    default_parameters = {
+        'k': 1.0,
+        'rc': None,
+    }
+    nolabel = True
+
+    def __init__(self, **kwargs):
+
+        Calculator.__init__(self, **kwargs)
+
+        if self.parameters.rc is None:
+            self.parameters.rc = 2
+
+        self.nl = None
+
+    def calculate(
+        self,
+        atoms=None,
+        properties=None,
+        system_changes=all_changes,
+    ):
+        if properties is None:
+            properties = self.implemented_properties
+
+        Calculator.calculate(self, atoms, properties, system_changes)
+
+        natoms = len(self.atoms)
+
+        k = self.parameters.k
+        rc = self.parameters.rc
+
+        if self.nl is None or 'numbers' in system_changes:
+            self.nl = NeighborList(
+                [rc / 2] * natoms, self_interaction=False, bothways=True
+            )
+
+        self.nl.update(self.atoms)
+
+        positions = self.atoms.positions
+        cell = self.atoms.cell
+
+        energies = np.zeros(natoms)
+        forces = np.zeros((natoms, 3))
+
+        for ii in range(natoms):
+            neighbors, offsets = self.nl.get_neighbors(ii)
+            cells = np.dot(offsets, cell)
+
+            # pointing *towards* neighbours
+            distance_vectors = positions[neighbors] + cells - positions[ii]
+
+            r = np.sqrt((distance_vectors ** 2).sum(1))
+            within_cutoff = r < rc
+
+            pairwise_forces = -k * (1.0 / r) * within_cutoff
+
+            pairwise_forces = pairwise_forces[:, np.newaxis] * distance_vectors
+
+            forces[ii] += pairwise_forces.sum(axis=0)
+
+
+
+        energy = energies.sum()
+        self.results['energy'] = energy
+        self.results['energies'] = energies
+
+        self.results['free_energy'] = energy
+
+        self.results['forces'] = forces
+
+def pre_optimize(atoms,rcut=1.0):
+    calc = LinearInverseForce(rc=rcut)
+    atoms = Atoms(atoms, calculator=calc)
+    opt = BFGS(atoms)
+    opt.run(fmax=0.05, steps=1000)
+    
+    return atoms
+
 
 
 if __name__ == '__main__':

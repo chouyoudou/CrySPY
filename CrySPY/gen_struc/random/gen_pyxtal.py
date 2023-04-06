@@ -19,9 +19,11 @@ from ..struc_util import out_poscar
 from ..struc_util import scale_cell_mol
 from ..struc_util import rot_mat
 from .gen_interface import match_cell
-from ase.io import read
+from .gen_interface import pre_optimize
+from ase.io import read, write
 from pyxtal.lattice import Lattice
 from pymatgen.io.ase import AseAtomsAdaptor
+
 class Rnd_struc_gen_pyxtal:
     '''
     Random structure generation using pyxtal
@@ -650,11 +652,22 @@ class Rnd_struc_gen_pyxtal:
                 print(e, ':spg = {} retry.'.format(spg), file=sys.stderr)
                 self.spg_error.append(spg)
                 continue
-            # -- check if the atoms in cell
+            # -- Make sure all the atoms in cell
             up_ase_crystal = tmp_crystal.to_ase()
             up_ase_crystal.wrap()
             # -- generate the interface
             interface = match_cell(up_ase_crystal, sub_struc, buffer, vacuum)
+
+            # -- decide whether to preoptimize
+            if pre_relax:
+                # -- trans and sort, there would be some problem in preoptimize if we do not do this
+                interface = AseAtomsAdaptor.get_structure(interface)
+                interface = sort_by_atype(interface, self.atype)
+                interface = AseAtomsAdaptor.get_atoms(interface)
+            
+                # -- preoptimize
+                interface = pre_optimize(interface,rcut=1.6)
+
 
             if tmp_crystal.valid:
                 interface = AseAtomsAdaptor.get_structure(interface)    # pymatgen Structure format
@@ -669,8 +682,9 @@ class Rnd_struc_gen_pyxtal:
                     if not self._check_nat(tmp_struc):    # failure
                         continue
                 '''
-                # -- sort
-                interface = sort_by_atype(interface, self.atype)
+
+
+
                 # -- check minimum distance
                 if self.mindist is not None:
                     success, mindist_ij, dist = check_distance(interface,
