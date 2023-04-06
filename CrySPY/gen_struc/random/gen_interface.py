@@ -14,9 +14,11 @@ def update_pos(up_struc, sub_struc, buffer):
     '''Automatically match substrate and superstructure'''
     up_pos = up_struc.positions
     sub_cellpar = sub_struc.cell.cellpar()
-    displace = sub_cellpar[2]   ### c
-    for i in range(len(up_pos)):
-        up_pos[i][2] = up_pos[i][2] + displace + buffer
+    displace = sub_cellpar[2] + buffer
+
+    # 直接将 z 坐标加上位移量
+    up_pos[:, 2] += displace
+
     return up_pos
 
 def translate_pos(structure, direction, displace):
@@ -41,20 +43,27 @@ def create_inter_lattice(up_struc, sub_struc, buffer, vacum):
 
 def match_cell(up_struc, sub_struc, buffer, vacum):
     sub_pos = sub_struc.positions
-    sub_symbol = sub_struc.get_chemical_formula()
+    sub_symbol = sub_struc.get_chemical_symbols()
     sub_cellpar = sub_struc.cell.cellpar()
-    
-    up_symbol = up_struc.get_chemical_formula()
+
+    up_symbol = up_struc.get_chemical_symbols()
     new_up_pos = update_pos(up_struc, sub_struc, buffer)
-    
-    inter_pos= np.vstack((new_up_pos , sub_pos))
+
     inter_cellpar = create_inter_lattice(up_struc, sub_struc, buffer, vacum)
-    inter_struc = Atoms(up_symbol+sub_symbol, inter_pos, cell=inter_cellpar)
-    #new_up_struc = Atoms(up_symbol, new_up_pos, cell=inter_cellpar)
-    fix = FixAtoms( mask = inter_struc.positions[:,2] < sub_cellpar[2] ) ##Fix all atoms whose z-coordinate is less than the lattice constant c of the base, that is, fix all atoms of the base
+
+    # 创建一个新的 Atoms 对象，用于存储界面结构
+    inter_struc = Atoms(symbols=sub_symbol, positions=sub_pos, cell=inter_cellpar, pbc=True)
+
+    # 使用 ase.Atoms.extend 方法将更新后的顶层结构添加到基底结构中
+    inter_struc.extend(Atoms(symbols=up_symbol, positions=new_up_pos, cell=inter_cellpar, pbc=True))
+
+    # 设置约束条件
+    fix = FixAtoms(mask=inter_struc.positions[:, 2] < sub_cellpar[2])
     inter_struc.set_constraint(fix)
-    
+
     return inter_struc
+
+
 
 def separate(interface_struc, thickness):
     sub_thickness = thickness
