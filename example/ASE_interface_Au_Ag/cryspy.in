@@ -17,9 +17,12 @@ thickness = 7.22
 up_atype = Ag
 up_nat = 24 
 struc_mode = interface
-
+mindist_1 = 1.1 1.1
+mindist_2 = 1.1 1.1
 [ASE]
 ase_infile = opt.py
 ase_outfile = ase.log
 ase_potential = Au_Ag.pb
 
+[option]
+pre_relax= True
